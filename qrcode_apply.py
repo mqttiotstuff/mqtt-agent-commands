@@ -3,9 +3,7 @@
 #
 
 import paho.mqtt.client as mqtt
-import random
 import time
-import re
 import configparser
 import os.path
 import json
@@ -45,11 +43,9 @@ client2.connect(mqttbroker, 1883, 60)
 client = mqtt.Client()
 client.username_pw_set(username, password)
 
-BUTTON = "home/esp13/sensors/+"
-
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    # client.subscribe(BUTTON)
+    print("connected")
     pass
 
 
@@ -76,7 +72,7 @@ client.loop_start()
 lastvalue = None
 
 #hostName = "localhost"
-hostName = "192.168.4.3"
+hostName = "fhome.frett27.net"
 serverPort = 7980
 
 def generate_command_qrcode_image(properties):
@@ -96,9 +92,16 @@ def generate_command_qrcode_image(properties):
     img = qr.make_image(fill="black",back_color='white')
     return img
 
+def generate_qrcode_image(qrcodedata):
+    qr = qrcode.QRCode( version=1, box_size=10, border=5)
+    qr.add_data(qrcodedata)
+    qr.make(fit=True)
+    img = qr.make_image(fill="black",back_color='white')
+    return img
+
+
 class MyServer(BaseHTTPRequestHandler):
     def do_GET(self):
-
 
         self.send_response(200)
         self.send_header("Content-type", "text/html")
@@ -117,17 +120,22 @@ class MyServer(BaseHTTPRequestHandler):
                 elif len(v) == 0:
                     query_components[k] = ""
 
+        # launch command if url contains the /commands
         if self.path.startswith("/commands"):
             # launch the mqtt message
             client2.publish(QRCOMMANDS + "/commands", json.dumps(query_components))
             print("Command sent")
 
-        self.wfile.write(bytes("<p>Request: %s</p>   parameters : %s" % (self.path, query_components), "utf-8"))
+
+        # in every case, display the request, and qrcode (for all requests)
+        # i LOVE writing html by hand ;-), just a simple one for now (to limit dependencies)
         self.wfile.write(bytes("<body>", "utf-8"))
+        self.wfile.write(bytes("<p>Request: %s</p>   parameters : %s" % (self.path, query_components), "utf-8"))
 
         img = generate_command_qrcode_image(query_components)
-        import base64
 
+        # transform img to base64 encoded image
+        import base64
         from io import BytesIO
 
         buffered = BytesIO()
