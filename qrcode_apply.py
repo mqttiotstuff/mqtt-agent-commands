@@ -106,12 +106,12 @@ class MyServer(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write(bytes("<html><head><title>https://pythonbasics.org</title></head>", "utf-8"))
+        self.wfile.write(bytes("<html><head><title>QRCode generator for mqtt</title></head>", "utf-8"))
 
         from urllib.parse import urlparse, parse_qs
         query_components = parse_qs(urlparse(self.path).query)
 
-        # sanitize the dict
+        # sanitize the dict, it remove the possible multiple values (not used in this case)
         for k in query_components:
             v = query_components[k]
             if isinstance(v, list):
@@ -120,7 +120,7 @@ class MyServer(BaseHTTPRequestHandler):
                 elif len(v) == 0:
                     query_components[k] = ""
 
-        # launch command if url contains the /commands
+        # if the url starts with /commands, then it emit a command on the mqtt broker
         if self.path.startswith("/commands"):
             # launch the mqtt message
             client2.publish(QRCOMMANDS + "/commands", json.dumps(query_components))
