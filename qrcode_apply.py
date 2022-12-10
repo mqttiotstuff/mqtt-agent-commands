@@ -123,6 +123,7 @@ class MyServer(BaseHTTPRequestHandler):
         # if the url starts with /commands, then it emit a command on the mqtt broker
         if self.path.startswith("/commands"):
             # launch the mqtt message
+            query_components['client_address'] = self.address_string()
             client2.publish(QRCOMMANDS + "/commands", json.dumps(query_components))
             print("Command sent")
 
